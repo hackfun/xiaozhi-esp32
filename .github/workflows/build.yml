@@ -7,7 +7,7 @@ on:
       variant_filter:
         description: 'Only build variants whose name/full_name contains this substring. Empty = changed-file selection.'
         required: false
-        default: '128x64'
+        default: 'bread-compact-wifi-128x64'
   push:
     branches:
       - main
@@ -73,7 +73,7 @@ jobs:
           # Apply variant substring filter (push runs on ci/* default to 128x64).
           FILTER="$VARIANT_FILTER"
           if [[ -z "$FILTER" && "$EVENT_NAME" == "push" ]]; then
-            FILTER="128x64"
+            FILTER="bread-compact-wifi-128x64"
           fi
           if [[ -n "$FILTER" ]]; then
             python - "$RUNNER_TEMP/variants.json" "$FILTER" <<'PY'
@@ -142,7 +142,10 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: xiaozhi_${{ matrix.ci_name || matrix.full_name }}_${{ github.sha }}
-          path: build/merged-binary.bin
+          path: |
+            build/merged-binary.bin
+            sdkconfig
+            build/xiaozhi-build.sdkconfig.defaults
           if-no-files-found: error
 
   release:
@@ -155,16 +158,25 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           pattern: xiaozhi_*
-          merge-multiple: true
           path: dist
+
+      - name: Rename binaries per variant
+        run: |
+          # One directory per artifact; avoid name collisions between variants
+          for d in dist/xiaozhi_*/; do
+            variant=$(basename "$d")
+            if [ -f "$d/merged-binary.bin" ]; then
+              cp "$d/merged-binary.bin" "dist/${variant}.bin"
+            fi
+          done
+          ls -la dist
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ci-${{ github.run_id }}
         run: |
-          ls -la dist
-          gh release create "$TAG" dist/* \
+          gh release create "$TAG" dist/*.bin \
             --repo "$GITHUB_REPOSITORY" \
             --title "CI firmware $TAG" \
-            --notes "Auto-built CI firmware (branch: ${{ github.ref_name }}, sha: ${{ github.sha }}). Flash merged-binary.bin at offset 0x0."
+            --notes "Auto-built CI firmware (branch: ${{ github.ref_name }}, sha: ${{ github.sha }}). Flash the matching <variant>.bin at offset 0x0."
