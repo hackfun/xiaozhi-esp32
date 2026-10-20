@@ -80,9 +80,12 @@ jobs:
           import json, sys
           path, f = sys.argv[1], sys.argv[2]
           data = json.load(open(path, encoding="utf-8"))
-          data = [v for v in data if f in v.get("name", "") or f in v.get("full_name", "")]
+          # Variants are dicts with name/full_name; tolerate plain path lists
+          # (as used by the CI selection tests' mock selector) by skipping.
+          if data and isinstance(data[0], dict):
+              data = [v for v in data if f in v.get("name", "") or f in v.get("full_name", "")]
           json.dump(data, open(path, "w", encoding="utf-8"))
-          print(f"Variant filter '{f}' kept {len(data)} variants: {[v['full_name'] for v in data]}")
+          print(f"Variant filter '{f}' applied, {len(data)} entries remain")
           PY
           fi
 
