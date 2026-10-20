@@ -87,6 +87,21 @@ jobs:
           json.dump(data, open(path, "w", encoding="utf-8"))
           print(f"Variant filter '{f}' applied, {len(data)} entries remain")
           PY
+            # Fallback: the changed-file selection may not include the requested
+            # variant (e.g. only workflow files changed). Rebuild the list from
+            # the full variant catalog instead of skipping the build.
+            if [[ "$(cat "$RUNNER_TEMP/variants.json")" == "[]" ]]; then
+              echo "Filter matched nothing in changed-file selection; falling back to full catalog"
+              python scripts/build.py --list-boards --json > "$RUNNER_TEMP/all_variants.json"
+              python - "$RUNNER_TEMP/all_variants.json" "$RUNNER_TEMP/variants.json" "$FILTER" <<'PY'
+          import json, sys
+          src, dst, f = sys.argv[1], sys.argv[2], sys.argv[3]
+          data = json.load(open(src, encoding="utf-8"))
+          data = [v for v in data if f in v.get("name", "") or f in v.get("full_name", "")]
+          json.dump(data, open(dst, "w", encoding="utf-8"))
+          print(f"Fallback catalog filter '{f}': {[v['full_name'] for v in data]}")
+          PY
+            fi
           fi
 
           {
