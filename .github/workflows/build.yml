@@ -3,6 +3,11 @@ name: Build Boards
 on:
   # Manual runs exercise the full matrix, including CI-specific options.
   workflow_dispatch:
+    inputs:
+      variant_filter:
+        description: 'Only build variants whose name/full_name contains this substring. Empty = changed-file selection.'
+        required: false
+        default: '128x64'
   push:
     branches:
       - main
@@ -12,7 +17,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   prepare:
@@ -37,6 +42,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           BEFORE_SHA: ${{ github.event.before }}
+          VARIANT_FILTER: ${{ github.event.inputs.variant_filter }}
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           CHANGED_FILE="$RUNNER_TEMP/changed-files.txt"
@@ -63,6 +69,23 @@ jobs:
 
           # Keep the full manual matrix out of environment variables.
           python scripts/build.py --select-changed < "$CHANGED_FILE" > "$RUNNER_TEMP/variants.json"
+
+          # Apply variant substring filter (push runs on ci/* default to 128x64).
+          FILTER="$VARIANT_FILTER"
+          if [[ -z "$FILTER" && "$EVENT_NAME" == "push" ]]; then
+            FILTER="128x64"
+          fi
+          if [[ -n "$FILTER" ]]; then
+            python - "$RUNNER_TEMP/variants.json" "$FILTER" <<'PY'
+          import json, sys
+          path, f = sys.argv[1], sys.argv[2]
+          data = json.load(open(path, encoding="utf-8"))
+          data = [v for v in data if f in v.get("name", "") or f in v.get("full_name", "")]
+          json.dump(data, open(path, "w", encoding="utf-8"))
+          print(f"Variant filter '{f}' kept {len(data)} variants: {[v['full_name'] for v in data]}")
+          PY
+          fi
+
           {
             printf 'variants='
             cat "$RUNNER_TEMP/variants.json"
@@ -103,3 +126,27 @@ jobs:
           name: xiaozhi_${{ matrix.ci_name || matrix.full_name }}_${{ github.sha }}
           path: build/merged-binary.bin
           if-no-files-found: error
+
+  release:
+    name: Publish firmware release
+    needs: build
+    if: ${{ needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: xiaozhi_*
+          merge-multiple: true
+          path: dist
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ci-${{ github.run_id }}
+        run: |
+          ls -la dist
+          gh release create "$TAG" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "CI firmware $TAG" \
+            --notes "Auto-built CI firmware (branch: ${{ github.ref_name }}, sha: ${{ github.sha }}). Flash merged-binary.bin at offset 0x0."
