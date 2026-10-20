@@ -138,12 +138,26 @@ jobs:
           fi
           python scripts/build.py "$BOARD" --name "$VARIANT" "${OPTIONS[@]}"
 
+      # One-shot crash triage: symbolize the known LoadProhibited backtrace
+      # captured on real hardware (addresses are stable for this source tree).
+      - name: Symbolize known crash backtrace
+        if: ${{ matrix.name == 'bread-compact-wifi-128x64' }}
+        shell: bash
+        run: |
+          ELF=$(ls build/*.elf 2>/dev/null | head -1)
+          echo "ELF: $ELF"
+          xtensa-esp32s3-elf-addr2line -pfiaC -e "$ELF" \
+            0x420ccfef 0x420cd161 0x420ccdb4 0x420cd3f8 0x4202725e \
+            0x420272ad 0x4201461c 0x4202195b 0x421a21e2 0x4201ce43 \
+            0x4201e376 0x4201e396 || true
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: xiaozhi_${{ matrix.ci_name || matrix.full_name }}_${{ github.sha }}
           path: |
             build/merged-binary.bin
+            build/*.elf
             sdkconfig
             build/xiaozhi-build.sdkconfig.defaults
           if-no-files-found: error
