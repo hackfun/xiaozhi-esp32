@@ -176,6 +176,9 @@ choice BOARD_TYPE
     config BOARD_TYPE_BREAD_COMPACT_WIFI_LCD
         bool "Bread Compact Wi-Fi + LCD (面包板)"
         depends on IDF_TARGET_ESP32S3
+    config BOARD_TYPE_POCKET_RADAR
+        bool "Pocket Radar (口袋雷达: 圆屏 + GPS + 罗盘)"
+        depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_BREAD_COMPACT_WIFI_CAM
         bool "Bread Compact Wi-Fi + LCD + Camera (面包板)"
         depends on IDF_TARGET_ESP32S3

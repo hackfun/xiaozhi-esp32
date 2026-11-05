@@ -1,0 +1,13 @@
+{
+    "type": "pocket-radar",
+    "target": "esp32s3",
+    "builds": [
+        {
+            "name": "pocket-radar",
+            "sdkconfig_append": [
+                "CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y",
+                "CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y"
+            ]
+        }
+    ]
+}

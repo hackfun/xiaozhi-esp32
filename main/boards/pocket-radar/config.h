@@ -1,0 +1,77 @@
+#ifndef _BOARD_CONFIG_H_
+#define _BOARD_CONFIG_H_
+
+// 口袋雷达（pocket-radar）板型
+// 硬件：ESP32-S3-DevKitC-1 (N16R8) + GC9A01 1.28 寸圆屏 + INMP441 + MAX98357A
+//       + ATGM336H (GPS) + QMC5883L (电子罗盘)
+//
+// 引脚规划原则：避开 I2S 音频与 SPI 屏占用的脚，且不碰 GPIO 19/20(USB)、
+// 26~32(Flash)、33~37(P8R8 的 PSRAM)、43/44(UART0)。
+
+#include <driver/gpio.h>
+#include <driver/uart.h>
+
+#define AUDIO_INPUT_SAMPLE_RATE  16000
+#define AUDIO_OUTPUT_SAMPLE_RATE 24000
+
+// 单工 I2S：麦克风与功放各走一路
+#define AUDIO_I2S_METHOD_SIMPLEX
+
+#ifdef AUDIO_I2S_METHOD_SIMPLEX
+#define AUDIO_I2S_MIC_GPIO_WS   GPIO_NUM_4
+#define AUDIO_I2S_MIC_GPIO_SCK  GPIO_NUM_5
+#define AUDIO_I2S_MIC_GPIO_DIN  GPIO_NUM_6
+#define AUDIO_I2S_SPK_GPIO_DOUT GPIO_NUM_7
+#define AUDIO_I2S_SPK_GPIO_BCLK GPIO_NUM_15
+#define AUDIO_I2S_SPK_GPIO_LRCK GPIO_NUM_16
+#else
+#define AUDIO_I2S_GPIO_WS   GPIO_NUM_4
+#define AUDIO_I2S_GPIO_BCLK GPIO_NUM_5
+#define AUDIO_I2S_GPIO_DIN  GPIO_NUM_6
+#define AUDIO_I2S_GPIO_DOUT GPIO_NUM_7
+#endif
+
+#define BUILTIN_LED_GPIO        GPIO_NUM_48
+#define BOOT_BUTTON_GPIO        GPIO_NUM_0
+#define TOUCH_BUTTON_GPIO       GPIO_NUM_NC
+#define VOLUME_UP_BUTTON_GPIO   GPIO_NUM_NC
+#define VOLUME_DOWN_BUTTON_GPIO GPIO_NUM_NC
+
+// ---- SPI 圆屏 GC9A01 240x240 ----
+#define DISPLAY_BACKLIGHT_PIN GPIO_NUM_42
+#define DISPLAY_MOSI_PIN      GPIO_NUM_47
+#define DISPLAY_CLK_PIN       GPIO_NUM_21
+#define DISPLAY_DC_PIN        GPIO_NUM_40
+#define DISPLAY_RST_PIN       GPIO_NUM_45
+#define DISPLAY_CS_PIN        GPIO_NUM_41
+
+#define LCD_TYPE_GC9A01_SERIAL
+#define DISPLAY_WIDTH   240
+#define DISPLAY_HEIGHT  240
+#define DISPLAY_MIRROR_X true
+#define DISPLAY_MIRROR_Y false
+#define DISPLAY_SWAP_XY false
+#define DISPLAY_INVERT_COLOR    true
+#define DISPLAY_RGB_ORDER  LCD_RGB_ELEMENT_ORDER_BGR
+#define DISPLAY_OFFSET_X  0
+#define DISPLAY_OFFSET_Y  0
+#define DISPLAY_BACKLIGHT_OUTPUT_INVERT false
+#define DISPLAY_SPI_MODE 0
+
+// ---- ATGM336H (GPS / 北斗) ----
+// 模块只往外吐 NMEA，RX 是必须的；TX 留着以后下发配置指令
+#define RADAR_GPS_UART_NUM  UART_NUM_1
+#define RADAR_GPS_RX_PIN    GPIO_NUM_17
+#define RADAR_GPS_TX_PIN    GPIO_NUM_18
+#define RADAR_GPS_BAUD_RATE 9600
+
+// ---- QMC5883L (电子罗盘) ----
+// 一期没接也能跑（用距离条代替指向），接上后再启用
+#define RADAR_COMPASS_I2C_SDA GPIO_NUM_8
+#define RADAR_COMPASS_I2C_SCL GPIO_NUM_9
+
+// ---- 无源蜂鸣器（可选）----
+// 距离越近频率越高。用喇叭播提示音也能凑合，这个是增强项。
+#define RADAR_BUZZER_PIN GPIO_NUM_10
+
+#endif  // _BOARD_CONFIG_H_
