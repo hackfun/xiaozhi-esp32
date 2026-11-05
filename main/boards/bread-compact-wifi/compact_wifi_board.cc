@@ -8,6 +8,7 @@
 #include "mcp_server.h"
 #include "lamp_controller.h"
 #include "led/single_led.h"
+#include "radar/radar_link.h"
 #include "assets/lang_config.h"
 
 #include <esp_log.h>
@@ -150,6 +151,10 @@ private:
     // 物联网初始化，逐步迁移到 MCP 协议
     void InitializeTools() {
         static LampController lamp(LAMP_GPIO);
+
+        // 雷达手表的上报接收端。内部会等 WiFi 连上再初始化 ESP-NOW，
+        // 失败只打日志，不影响掌机本身启动。
+        radar::RadarLink::GetInstance().Start();
     }
 
 public:

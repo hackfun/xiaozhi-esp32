@@ -600,11 +600,6 @@ elseif(CONFIG_BOARD_TYPE_BREAD_COMPACT_WIFI_LCD)
     set(BUILTIN_TEXT_FONT font_noto_sans_basic_16_4)
     set(BUILTIN_ICON_FONT font_material_symbols_16_4)
     set(DEFAULT_EMOJI_COLLECTION noto-color-emoji_32)
-elseif(CONFIG_BOARD_TYPE_POCKET_RADAR)
-    set(BOARD_DIR "pocket-radar")
-    set(BUILTIN_TEXT_FONT font_noto_sans_basic_16_4)
-    set(BUILTIN_ICON_FONT font_material_symbols_16_4)
-    set(DEFAULT_EMOJI_COLLECTION noto-color-emoji_32)
 elseif(CONFIG_BOARD_TYPE_LILYGO_T_CIRCLE_S3)
     set(BOARD_DIR "lilygo/t-circle-s3")
     set(BUILTIN_TEXT_FONT font_noto_sans_basic_16_4)
@@ -940,18 +935,8 @@ file(GLOB BOARD_SOURCES
 )
 list(APPEND SOURCES ${BOARD_SOURCES})
 
-# 寻宝雷达（只给 pocket-radar 板型编译，避免别的板型凭空多出几 KB）
-if(CONFIG_BOARD_TYPE_POCKET_RADAR)
-    list(APPEND SOURCES
-        "radar/geo_utils.cc"
-        "radar/nmea_parser.cc"
-        "radar/treasure_engine.cc"
-        "radar/radar_render.cc"
-        "radar/radar_view.cc"
-        "radar/radar_service.cc"
-        "radar/radar_tools.cc"
-    )
-endif()
+# 雷达手表接收端（ESP-NOW 上报）。只有几百行，所有板型都编，不用条件包。
+list(APPEND SOURCES "radar/radar_link.cc")
 
 # Select one audio engine for each chip family
 if(CONFIG_IDF_TARGET_ESP32S3 OR CONFIG_IDF_TARGET_ESP32P4 OR CONFIG_IDF_TARGET_ESP32S31)

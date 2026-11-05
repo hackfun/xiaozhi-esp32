@@ -36,21 +36,6 @@ jobs:
       - name: Test build tooling
         run: python -m unittest discover -s scripts/tests -v
 
-      # 寻宝算法不依赖 ESP-IDF，用 host g++ 直接编译跑，比烧板子快得多。
-      # 带 ASan/UBSan：雷达绘制大量做像素索引，越界靠肉眼看不出来。
-      - name: Test radar algorithm (host)
-        shell: bash
-        run: |
-          g++ -std=c++17 -O1 -Wall -Wextra -Imain \
-            -fsanitize=address,undefined -fno-omit-frame-pointer \
-            tests/radar/test_radar.cc \
-            main/radar/geo_utils.cc \
-            main/radar/nmea_parser.cc \
-            main/radar/treasure_engine.cc \
-            main/radar/radar_render.cc \
-            -o /tmp/test_radar
-          /tmp/test_radar
-
       - id: select
         name: Select variants based on changes
         shell: bash
