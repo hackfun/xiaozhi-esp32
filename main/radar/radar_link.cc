@@ -37,7 +37,7 @@ std::string BuildPerception(const radar_packet_t& packet) {
     char text[320];
 
     switch (packet.phase) {
-        case kPhaseApproaching:
+        case kPhaseNear:
             std::snprintf(text, sizeof(text),
                           "（系统感知：手表报告目标「%s」在 %.0f 米内，已进入接近范围。"
                           "这是手表读到的，不是用户在说话。用当前角色口吻说一句反应，"
