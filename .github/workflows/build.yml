@@ -174,16 +174,22 @@ jobs:
           pattern: xiaozhi_*
           path: dist
 
-      - name: Rename binaries per variant
+      - name: Collect merged binaries
+        shell: bash
         run: |
-          # One directory per artifact; avoid name collisions between variants
-          for d in dist/xiaozhi_*/; do
-            variant=$(basename "$d")
-            if [ -f "$d/merged-binary.bin" ]; then
-              cp "$d/merged-binary.bin" "dist/${variant}.bin"
-            fi
-          done
+          # artifact 解压后的目录层级在不同 download-artifact 版本间会变，
+          # 原来按 dist/xiaozhi_*/ 遍历，实际结构不符就一个文件都拷不到，
+          # 后面 gh release create dist/*.bin 自然报 no matches found。
+          # 改成用 find 按文件名找，不依赖目录假设。
+          find dist -name 'merged-binary.bin' -type f > /tmp/found.txt
+          echo "found $(wc -l < /tmp/found.txt) merged binary(ies)"
+          while IFS= read -r f; do
+            variant=$(basename "$(dirname "$f")")
+            cp "$f" "dist/${variant}.bin"
+            echo "  -> ${variant}.bin"
+          done < /tmp/found.txt
           ls -la dist
+          test -n "$(find dist -maxdepth 1 -name '*.bin' -print -quit)"
 
       - name: Create GitHub release
         env:
