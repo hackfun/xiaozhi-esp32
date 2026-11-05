@@ -8,6 +8,7 @@
 #include "led/single_led.h"
 #include "radar/radar_service.h"
 #include "radar/radar_tools.h"
+#include "radar/radar_view.h"
 
 #include <esp_log.h>
 #include <driver/i2c_master.h>
@@ -139,6 +140,9 @@ private:
         service.SetPoints(kDefaultPoints, sizeof(kDefaultPoints) / sizeof(kDefaultPoints[0]));
         service.Start(RADAR_GPS_UART_NUM, RADAR_GPS_RX_PIN, RADAR_GPS_TX_PIN,
                       RADAR_GPS_BAUD_RATE);
+
+        // 雷达盘面挂在同一个圆屏上，有目标且在量程内时自动占屏
+        radar::RadarView::GetInstance().Attach(display_);
     }
 
 public:

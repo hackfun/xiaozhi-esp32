@@ -946,6 +946,8 @@ if(CONFIG_BOARD_TYPE_POCKET_RADAR)
         "radar/geo_utils.cc"
         "radar/nmea_parser.cc"
         "radar/treasure_engine.cc"
+        "radar/radar_render.cc"
+        "radar/radar_view.cc"
         "radar/radar_service.cc"
         "radar/radar_tools.cc"
     )

@@ -7,9 +7,10 @@
 | `geo_utils.cc` | 球面距离、方位角、平面偏移 |
 | `nmea_parser.cc` | RMC / GGA 解析、校验和、无效定位、流式喂入 |
 | `treasure_engine.cc` | 三态状态机、中位数滤波、迟滞、确认时长、按事件类型冷却 |
+| `radar_render.cc` | 雷达盘面光栅化：角度方向、圆外留白、无目标时不画信号点 |
 
-`radar_service.cc` 和 `radar_tools.cc` 依赖固件运行时（Application / McpServer），
-只能上板验证，不在这个测试范围内。
+`radar_service.cc`、`radar_view.cc`、`radar_tools.cc` 依赖固件运行时
+（Application / LVGL / McpServer），只能上板验证，不在这个测试范围内。
 
 ## 怎么跑
 
@@ -40,6 +41,18 @@ g++ -std=c++17 -O1 -Wall -Wextra -Imain \
 ```bash
 python tests/radar/reference.py
 ```
+
+## 看雷达长什么样
+
+`preview.py` 是 `radar_render.cc` 的逐行复刻，输出 `preview.bmp`（四种距离状态拼成 2x2）。
+改配色、环半径、拖尾密度之前先在这里看，不用烧板子：
+
+```bash
+python tests/radar/preview.py
+```
+
+两边必须同步改。目前已经踩过一次：拖尾射线 56 条时外圈露出明显的「羽毛」状放射纹，
+提到 144 条才变成连续的扇形面。
 
 ## 测试里的几个关键约束
 

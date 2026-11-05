@@ -18,3 +18,6 @@ main/mmap_generate_emoji.h
 *.bin
 mmap_generate_*.h
 .clangd
+
+# 雷达预览图是生成产物，不入库
+tests/radar/preview.bmp

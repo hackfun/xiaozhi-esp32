@@ -5,9 +5,11 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include "radar/geo_utils.h"
 #include "radar/nmea_parser.h"
+#include "radar/radar_render.h"
 #include "radar/treasure_engine.h"
 
 using namespace radar;
@@ -157,6 +159,59 @@ void TestStateMachine() {
     CHECK(weak.phase() != RadarPhase::kArrived);
 }
 
+void TestRender() {
+    const int w = 240;
+    const int h = 240;
+    std::vector<uint16_t> static_buf(static_cast<size_t>(w) * h, 0);
+    std::vector<uint16_t> frame_buf(static_cast<size_t>(w) * h, 0);
+
+    RenderStatic(static_buf.data(), w, h, RadarRenderStyle{});
+
+    // 四角在圆外，必须是纯背景色（圆屏上这四个角本来也不可见）
+    CHECK(static_buf[0] == kColorBackground);
+    CHECK(static_buf[static_cast<size_t>(h - 1) * w + (w - 1)] == kColorBackground);
+    // 圆心被十字线覆盖
+    CHECK(static_buf[(h / 2) * w + (w / 2)] != kColorBackground);
+
+    RadarRenderInput input;
+    input.width = w;
+    input.height = h;
+    input.sweep_angle_deg = 90.0f;  // 正右
+    input.distance_m = 3.0f;
+    input.proximity = 0.9f;
+    input.pulse_phase = 0.5f;
+    RenderFrame(frame_buf.data(), w, h, static_buf.data(), input, RadarRenderStyle{});
+
+    // 角度 0 应当指向正上方、90 指向正右。若坐标系搞反，这条会挂。
+    bool right_lit = false;
+    const int mid_y = h / 2;
+    for (int x = w / 2 + 15; x < w / 2 + 50; ++x) {
+        if (frame_buf[static_cast<size_t>(mid_y) * w + x] !=
+            static_buf[static_cast<size_t>(mid_y) * w + x]) {
+            right_lit = true;
+            break;
+        }
+    }
+    CHECK(right_lit);
+
+    bool top_lit = false;
+    const int mid_x = w / 2;
+    for (int y = h / 2 - 50; y < h / 2 - 15; ++y) {
+        if (frame_buf[static_cast<size_t>(y) * w + mid_x] !=
+            static_buf[static_cast<size_t>(y) * w + mid_x]) {
+            top_lit = true;
+            break;
+        }
+    }
+    CHECK(!top_lit);  // 90 度时正上方不该有扫描线
+
+    // 无目标时不应画信号点
+    input.distance_m = -1.0f;
+    input.proximity = 0.0f;
+    RenderFrame(frame_buf.data(), w, h, static_buf.data(), input, RadarRenderStyle{});
+    CHECK(frame_buf[(h / 2) * w + (w / 2)] != kColorBackground);
+}
+
 }  // namespace
 
 int main() {
@@ -164,6 +219,7 @@ int main() {
     TestDistance();
     TestBearing();
     TestStateMachine();
+    TestRender();
 
     std::printf("%d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;
