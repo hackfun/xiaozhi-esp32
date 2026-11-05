@@ -46,6 +46,9 @@ private:
     void HandlePacket(const radar_packet_t& packet, int8_t rssi);
     void ReplyToPing();
     void Announce(const radar_packet_t& packet);
+    // 这块板子的 console 走 USB JTAG，CH343 上看不到应用日志，
+    // 所以把信道直接打到屏幕上，配手表时不用连电脑
+    void ShowChannelOnScreen(uint8_t channel);
 
     bool watching_ = false;
     bool running_ = false;

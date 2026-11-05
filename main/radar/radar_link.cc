@@ -96,9 +96,22 @@ void RadarLink::WatchLoop() {
             if (DoInit()) {
                 ESP_LOGI(TAG, "ready on channel %u (AP: %s)", ap.primary,
                          reinterpret_cast<const char*>(ap.ssid));
+                // 等设备把开机提示音和状态都刷完，否则 Alert 会被盖掉
+                vTaskDelay(pdMS_TO_TICKS(4000));
+                ShowChannelOnScreen(ap.primary);
             }
         }
     }
+}
+
+void RadarLink::ShowChannelOnScreen(uint8_t channel) {
+    char buffer[16];
+    std::snprintf(buffer, sizeof(buffer), "信道 %u", channel);
+    const std::string text(buffer);
+    auto& app = Application::GetInstance();
+    app.Schedule([text]() {
+        Application::GetInstance().Alert("雷达已就绪", text.c_str(), "neutral");
+    });
 }
 
 bool RadarLink::DoInit() {
